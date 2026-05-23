@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vitoria - Nayla & Rizal Wedding</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Playfair+Display:wght@400;700&family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
+
+    <style>
+        :root { 
+            --rose-gold: #B76E79; 
+            --rose-gold-light: #E5B1B1; 
+            --maroon-dark: #5D0E11; 
+            --soft-pink: #FCE4EC; 
+        }
+        body { font-family: 'Montserrat', sans-serif; background-color: var(--soft-pink); color: var(--maroon-dark); }
+        .font-wedding { font-family: 'Great Vibes', cursive; }
+        .font-title { font-family: 'Playfair Display', serif; }
+        .bg-rose-gold { background-color: var(--rose-gold); }
+        .text-rose-gold { color: var(--rose-gold); }
+        .bg-maroon { background-color: var(--maroon-dark); }
+        .text-maroon { color: var(--maroon-dark); }
+        .glass { background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(10px); border: 1px solid rgba(183, 110, 121, 0.3); }
+        .btn-maroon { background-color: var(--maroon-dark); color: white; transition: all 0.3s; }
+        .btn-maroon:hover { background-color: #3d090b; }
+        #custom-bg-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2; background-size: cover; background-position: center; transition: background-image 0.5s ease-in-out; }
+        .mirror-cam { transform: scaleX(-1); }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <div id="custom-bg-overlay"></div>
+
+    <div id="page-login" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gradient-to-br from-[#FCE4EC] to-[#E5B1B1]">
+        <div class="max-w-md w-full glass p-8 rounded-3xl shadow-2xl text-center border-2 border-rose-gold">
+            <img id="logo-login" src="image_bcc8eb.jpg" alt="Logo Nayla & Rizal Wedding" class="mx-auto w-36 h-36 mb-6 object-cover rounded-full shadow-lg border-4 border-rose-gold/50">
+            
+            <h1 class="font-wedding text-6xl mb-2 text-maroon">Nayla & Rizal</h1>
+            <p class="font-title text-sm tracking-widest uppercase mb-8 opacity-70">The Wedding Guestbook</p>
+            
+            <div id="login-form" class="space-y-4">
+                <input type="text" id="login-user" placeholder="Username Panitia" class="w-full px-4 py-3 rounded-xl border border-rose-gold outline-none text-sm">
+                <input type="password" id="login-pass" placeholder="Password Sistem" class="w-full px-4 py-3 rounded-xl border border-rose-gold outline-none text-sm">
+                <button onclick="handleLogin()" class="w-full btn-maroon py-3 rounded-xl font-bold shadow-lg text-xs tracking-wider">MASUK SISTEM SINKRONISASI</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="main-app" class="hidden">
+        <nav class="glass sticky top-0 z-50 px-6 py-3 flex justify-between items-center shadow-md border-b-2 border-rose-gold">
+            <div class="flex items-center gap-3">
+                <img id="logo-nav" src="image_bcc8eb.jpg" alt="Logo Vitoria" class="w-12 h-12 rounded-full object-cover border border-rose-gold/50 shadow-sm bg-white">
+                <div>
+                    <h2 class="font-bold text-maroon leading-tight text-lg tracking-wide">Vitoria</h2>
+                    <p class="text-[9px] text-rose-gold uppercase font-bold tracking-wider">Digital Guestbook and Invitation</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <p class="font-wedding text-2xl leading-none hidden sm:block">Nayla & Rizal</p>
+                <button onclick="handleLogout()" class="bg-rose-gold/20 hover:bg-rose-gold/40 px-3 py-1.5 rounded-xl text-maroon font-bold text-xs transition-all">LOGOUT</button>
+            </div>
+        </nav>
+
+        <div class="container mx-auto p-4 lg:p-8">
+            <div class="flex flex-wrap justify-center gap-2 mb-8">
+                <button onclick="showSection('dashboard', this)" class="tab-btn px-5 py-2 rounded-full bg-maroon text-white font-semibold text-xs tracking-wider transition-all shadow-sm">DASHBOARD</button>
+                <button onclick="showSection('checkin', this)" class="tab-btn px-5 py-2 rounded-full bg-white border border-rose-gold text-maroon font-semibold text-xs tracking-wider transition-all shadow-sm">SCAN / CARI TAMU</button>
+                <button onclick="showSection('souvenir', this)" class="tab-btn px-5 py-2 rounded-full bg-white border border-rose-gold text-maroon font-semibold text-xs tracking-wider transition-all shadow-sm">🎁 KLAIM SOUVENIR</button>
+                <button onclick="showSection('qrcode-tab', this)" class="tab-btn px-5 py-2 rounded-full bg-white border border-rose-gold text-maroon font-semibold text-xs tracking-wider transition-all shadow-sm">GENERATE QR</button>
+                <button onclick="showSection('settings', this)" class="tab-btn px-5 py-2 rounded-full bg-white border border-rose-gold text-maroon font-semibold text-xs tracking-wider transition-all shadow-sm">TAMPILAN WEB</button>
+            </div>
+
+            <div id="sec-dashboard" class="section-content space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="glass p-6 rounded-3xl shadow-xl flex flex-col items-center justify-center">
+                        <h3 class="font-title font-bold mb-4 text-sm uppercase tracking-wider">Statistik Kehadiran</h3>
+                        <div class="w-40 h-40"><canvas id="chartKehadiran"></canvas></div>
+                        <div class="grid grid-cols-3 gap-2 mt-6 w-full text-center text-[11px] sm:text-xs">
+                            <div class="p-2 bg-maroon text-white rounded-xl flex flex-col justify-center"><p>Hadir</p><p id="stat-hadir" class="font-bold text-base sm:text-lg">0</p></div>
+                            <div class="p-2 bg-emerald-600 text-white rounded-xl flex flex-col justify-center"><p>Total Pax</p><p id="stat-pax" class="font-bold text-base sm:text-lg">0</p></div>
+                            <div class="p-2 bg-rose-gold text-white rounded-xl flex flex-col justify-center"><p>Undangan</p><p id="stat-total" class="font-bold text-base sm:text-lg">0</p></div>
+                        </div>
+                    </div>
+                    <div class="glass p-6 rounded-3xl shadow-xl lg:col-span-2">
+                        <h3 class="font-title font-bold mb-4 text-sm uppercase tracking-wider">Tambah / Update Data Tamu</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="space-y-3">
+                                <input type="text" id="in-nama" placeholder="Nama Lengkap Tamu" class="w-full px-4 py-2 rounded-lg border border-rose-gold outline-none text-sm">
+                                <input type="text" id="in-kat" placeholder="Kategori Tamu (Keluarga/Rekan)" class="w-full px-4 py-2 rounded-lg border border-rose-gold outline-none text-sm">
+                                <select id="in-vip" class="w-full px-4 py-2 rounded-lg border border-rose-gold bg-white outline-none text-sm">
+                                    <option value="Tidak">Tipe: Regular (Tidak VIP)</option>
+                                    <option value="VIP">Tipe: VIP</option>
+                                </select>
+                                <button onclick="tambahTamu()" class="w-full btn-maroon py-2 rounded-lg font-bold uppercase text-xs">Simpan Data Manual</button>
+                            </div>
+                            <div class="border-2 border-dashed border-rose-gold rounded-2xl p-4 text-center flex flex-col justify-center items-center bg-rose-gold/5 relative">
+                                <p class="text-xs font-bold mb-2">IMPORT VIA EXCEL (.xlsx)</p>
+                                <p class="text-[10px] mb-3 opacity-70">Otomatis menerjemahkan opsi Dropdown dari Excel. Data ganda akan di-update.</p>
+                                <input type="file" id="fileExcel" accept=".xlsx, .xls, .csv" class="hidden" onchange="importExcel(event)">
+                                <label for="fileExcel" class="cursor-pointer bg-rose-gold text-white px-5 py-2 rounded-full text-xs font-bold hover:bg-maroon transition-all shadow-sm">PILIH FILE EXCEL</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass p-6 rounded-3xl shadow-xl overflow-hidden">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 border-b border-rose-gold/20 pb-4">
+                        <h3 class="font-title font-bold text-sm uppercase tracking-wider">Daftar Tamu Undangan Resmi</h3>
+                        <div class="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+                            <div class="w-full md:w-64 relative">
+                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-rose-gold">🔍</span>
+                                <input type="text" id="cari-daftar-tamu" onkeyup="updateUI()" placeholder="Cari nama/kategori..." class="w-full pl-10 pr-4 py-2 text-xs rounded-xl border border-rose-gold outline-none shadow-inner focus:ring-2 focus:ring-maroon-dark transition-all">
+                            </div>
+                            <button onclick="exportDataExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap shadow-md flex items-center justify-center gap-2">
+                                <span>📊</span> EXPORT EXCEL
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto max-h-96">
+                        <table class="w-full text-left">
+                            <thead class="sticky top-0 bg-white shadow-sm z-10">
+                                <tr class="border-b-2 border-rose-gold text-xs uppercase text-maroon font-bold">
+                                    <th class="py-3 px-4">Nama Tamu</th>
+                                    <th class="py-3 px-4">Kategori</th>
+                                    <th class="py-3 px-4">Status Kehadiran</th>
+                                    <th class="py-3 px-4 text-center">Preview Foto</th>
+                                    <th class="py-3 px-4 text-center">VIP</th>
+                                    <th class="py-3 px-4 text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabel-tamu" class="text-sm divide-y divide-rose-gold/10"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="sec-checkin" class="section-content hidden space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="glass p-6 rounded-3xl shadow-xl">
+                        <h3 class="font-title font-bold mb-4 text-sm uppercase tracking-wider">📱 QR Scanner Check-In</h3>
+                        <p class="text-xs opacity-70 mb-3">Arahkan QR Code ke kamera untuk check-in.</p>
+                        <div class="relative aspect-video w-full rounded-2xl overflow-hidden border-2 border-rose-gold bg-black flex items-center justify-center">
+                            <video id="scanner-video" autoplay playsinline class="w-full h-full object-cover"></video>
+                            <canvas id="scanner-canvas" class="hidden"></canvas>
+                        </div>
+                        <div class="flex gap-2 mt-4">
+                            <button onclick="startScanner()" class="flex-1 btn-maroon py-2.5 rounded-xl text-xs font-bold">AKTIFKAN SCANNER</button>
+                            <button onclick="stopScanner()" class="flex-1 border border-maroon py-2.5 rounded-xl text-xs font-bold text-maroon">MATIKAN</button>
+                        </div>
+                    </div>
+
+                    <div class="glass p-6 rounded-3xl shadow-xl space-y-4">
+                        <div>
+                            <h3 class="font-title font-bold mb-2 text-sm uppercase tracking-wider">🔎 Cari Nama Tamu Manual</h3>
+                            <p class="text-xs opacity-70 mb-3">Ketik nama tamu untuk memunculkan tombol Check-In beserta kamera.</p>
+                            <input type="text" id="cari-nama" onkeyup="filterCari()" placeholder="Ketik nama tamu undangan..." class="w-full px-4 py-3 rounded-xl border border-rose-gold outline-none text-sm shadow-inner">
+                            <div id="hasil-cari" class="space-y-2 max-h-96 overflow-y-auto mt-4"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="sec-souvenir" class="section-content hidden space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="glass p-6 rounded-3xl shadow-xl md:col-span-1">
+                        <h3 class="font-title font-bold mb-3 text-sm uppercase tracking-wider">🎁 Penyerahan Souvenir</h3>
+                        <p class="text-xs opacity-70 mb-4">Input nama tamu untuk mengeksekusi klaim (1 Undangan = 1 Souvenir).</p>
+                        <input type="text" id="cari-souvenir-nama" onkeyup="filterCariSouvenir()" placeholder="Ketik nama tamu..." class="w-full px-4 py-3 rounded-xl border border-rose-gold outline-none text-sm shadow-inner">
+                        <div id="hasil-cari-souvenir" class="space-y-2 max-h-64 overflow-y-auto mt-4"></div>
+                    </div>
+
+                    <div class="glass p-6 rounded-3xl shadow-xl md:col-span-2 overflow-hidden">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
+                            <h3 class="font-title font-bold text-sm uppercase tracking-wider">📜 Histori Status Souvenir</h3>
+                            <span class="bg-amber-100 text-amber-800 border border-amber-300 font-bold text-xs px-3 py-1 rounded-full shadow-sm whitespace-nowrap">Total Diklaim: <span id="stat-souvenir">0</span></span>
+                        </div>
+                        <div class="overflow-x-auto max-h-96">
+                            <table class="w-full text-left">
+                                <thead>
+                                    <tr class="border-b-2 border-rose-gold text-xs uppercase text-maroon font-bold">
+                                        <th class="py-3 px-4">Nama Tamu</th>
+                                        <th class="py-3 px-4">Tipe Tamu</th>
+                                        <th class="py-3 px-4">Keterangan Souvenir</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabel-souvenir" class="text-sm divide-y divide-rose-gold/10"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="sec-qrcode-tab" class="section-content hidden space-y-6">
+                <div class="glass p-6 rounded-3xl shadow-xl">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                        <h3 class="font-title font-bold text-base uppercase tracking-wider">Sistem Unduh Gambar QR Code</h3>
+                        <input type="text" id="cari-qr-tamu" onkeyup="renderQRTabList()" placeholder="Cari nama tamu..." class="px-4 py-2 text-sm rounded-lg border border-rose-gold max-w-xs w-full outline-none">
+                    </div>
+                    <div id="hidden-qr-engine" class="hidden"></div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-h-[500px] overflow-y-auto p-2" id="qr-download-grid"></div>
+                </div>
+            </div>
+
+            <div id="sec-settings" class="section-content hidden max-w-xl mx-auto">
+                <div class="glass p-8 rounded-3xl shadow-xl text-center border-2 border-rose-gold mb-6">
+                    <h3 class="font-title font-bold mb-4 text-sm uppercase tracking-wider">Modifikasi Logo Aplikasi</h3>
+                    <p class="text-xs opacity-70 mb-4 text-center bg-rose-gold/10 p-3 rounded-xl border border-rose-gold/30">Logo akan tersinkron otomatis di halaman Login & Navbar semua device yang bertugas.</p>
+                    
+                    <input type="file" id="logoInput" accept="image/*" class="hidden" onchange="uploadGlobalLogo(event)">
+                    <label for="logoInput" class="w-full btn-maroon py-4 rounded-2xl font-bold cursor-pointer block text-xs tracking-widest shadow-md">UNGGAH LOGO GLOBAL BARU</label>
+                    <button onclick="resetGlobalLogo()" class="text-rose-gold text-xs font-bold underline mt-4 block mx-auto hover:text-maroon">Kembalikan Logo ke Bawaan Sistem</button>
+                </div>
+
+                <div class="glass p-8 rounded-3xl shadow-xl text-center border-2 border-rose-gold">
+                    <h3 class="font-title font-bold mb-4 text-sm uppercase tracking-wider">Modifikasi Latar Belakang (Wallpaper)</h3>
+                    <p class="text-xs opacity-70 mb-4 text-center bg-rose-gold/10 p-3 rounded-xl border border-rose-gold/30">Wallpaper tersinkronisasi server. Perubahan berlaku di seluruh perangkat panitia.</p>
+                    
+                    <input type="file" id="bgInput" accept="image/*" class="hidden" onchange="uploadGlobalBG(event)">
+                    <label for="bgInput" class="w-full btn-maroon py-4 rounded-2xl font-bold cursor-pointer block text-xs tracking-widest shadow-md">UNGGAH WALLPAPER GLOBAL BARU</label>
+                    
+                    <div class="mt-6 space-y-2">
+                        <div class="flex justify-between text-xs font-bold"><span>Transparansi Lapisan Konten</span><span id="val-opacity" class="text-maroon">70%</span></div>
+                        <input type="range" min="0" max="100" value="70" oninput="changeGlobalOpacity(this.value)" class="w-full accent-maroon">
+                    </div>
+                    <button onclick="resetGlobalBG()" class="text-rose-gold text-xs font-bold underline mt-6 block mx-auto hover:text-maroon">Kembalikan Latar Bawaan Semua Device</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-foto" class="fixed inset-0 bg-black/70 z-[200] flex items-center justify-center hidden p-4" onclick="closeFotoModal()">
+        <div class="max-w-md w-full bg-white p-3 rounded-2xl relative shadow-2xl" onclick="event.stopPropagation()">
+            <img id="img-modal-target" src="" alt="Bukti Foto" class="w-full h-auto rounded-xl">
+            <button onclick="closeFotoModal()" class="w-full btn-maroon py-2 rounded-xl text-xs font-bold mt-3">TUTUP PREVIEW FOTO</button>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyA2lqGVaoUh2SD8l45VAEilru2PjMc8_-0",
+            authDomain: "nayla-rizal-wedding.firebaseapp.com",
+            databaseURL: "https://nayla-rizal-wedding-default-rtdb.firebaseio.com",
+            projectId: "nayla-rizal-wedding",
+            storageBucket: "nayla-rizal-wedding.firebasestorage.app",
+            messagingSenderId: "870542152103",
+            appId: "1:870542152103:web:6011b0b6cc0ba84cc62682",
+            measurementId: "G-GEV9775J7Z"
+        };
+
+        const USER_SISTEM = "admin";
+        const PASS_SISTEM = "1234";
+
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const db = database.ref("guests_list_wedding");
+        const bgRef = database.ref("app_background_settings");
+        const logoRef = database.ref("app_logo_settings");
+        // Tambahan referensi trigger layar eksternal
+        const monitorRef = database.ref("layar_proyektor_trigger");
+
+        let guests = [];
+        let chartInstance = null;
+        let scannerStream = null;
+        let scanActive = false;
+        let webcamStream = null;
+
+        db.on("value", (snapshot) => {
+            const data = snapshot.val();
+            guests = [];
+            if (data) {
+                Object.keys(data).forEach(key => {
+                    guests.push({ fireKey: key, ...data[key] });
+                });
+            }
+            if(localStorage.getItem('tamukita_online_session')) {
+                updateUI();
+                renderQRTabList();
+                updateSouvenirTable();
+            }
+        });
+
+        logoRef.on("value", (snapshot) => {
+            const config = snapshot.val();
+            const defaultLogo = "image_bcc8eb.jpg";
+            const finalLogo = (config && config.image) ? config.image : defaultLogo;
+            const logoLogin = document.getElementById('logo-login');
+            const logoNav = document.getElementById('logo-nav');
+            if (logoLogin) logoLogin.src = finalLogo;
+            if (logoNav) logoNav.src = finalLogo;
+        });
+
+        bgRef.on("value", (snapshot) => {
+            const config = snapshot.val();
+            const overlay = document.getElementById('custom-bg-overlay');
+            const opacitySlider = document.getElementById('bgInput') ? document.getElementById('val-opacity') : null;
+            const sliderInput = document.querySelector('input[type="range"]');
+
+            if (config) {
+                if (config.image) overlay.style.backgroundImage = `url(${config.image})`;
+                else overlay.style.backgroundImage = 'none';
+                
+                const opacityVal = config.opacity !== undefined ? config.opacity : 70;
+                overlay.style.opacity = (100 - opacityVal) / 100;
+                
+                if (opacitySlider && sliderInput) {
+                    opacitySlider.innerText = opacityVal + '%';
+                    sliderInput.value = opacityVal;
+                }
+            } else {
+                overlay.style.backgroundImage = 'none';
+                overlay.style.opacity = 0.3;
+            }
+        });
+
+        window.onload = () => {
+            if(localStorage.getItem('tamukita_online_session')) {
+                document.getElementById('page-login').classList.add('hidden');
+                document.getElementById('main-app').classList.remove('hidden');
+            }
+        };
+
+        function handleLogin() {
+            const u = document.getElementById('login-user').value.trim();
+            const p = document.getElementById('login-pass').value.trim();
+            if(u === USER_SISTEM && p === PASS_SISTEM) {
+                localStorage.setItem('tamukita_online_session', 'true');
+                Swal.fire('Koneksi Berhasil', 'Selamat bertugas!', 'success').then(() => location.reload());
+            } else {
+                Swal.fire('Akses Ditolak', 'Username atau Password salah.', 'error');
+            }
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('tamukita_online_session');
+            location.reload();
+        }
+
+        function showSection(id, element) {
+            document.querySelectorAll('.section-content').forEach(s => s.classList.add('hidden'));
+            document.getElementById(`sec-${id}`).classList.remove('hidden');
+            
+            document.querySelectorAll('.tab-btn').forEach(b => {
+                b.className = "tab-btn px-5 py-2 rounded-full bg-white border border-rose-gold text-maroon font-semibold text-xs tracking-wider transition-all shadow-sm";
+            });
+            
+            if(element) {
+                element.className = "tab-btn px-5 py-2 rounded-full bg-maroon text-white font-semibold text-xs tracking-wider transition-all shadow-md border border-maroon";
+            }
+            if(id !== 'checkin') stopScanner();
+        }
+
+        function uploadGlobalLogo(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            Swal.fire({ title: 'Menyimpan Logo...', text: 'Mengunggah logo ke server cloud...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                logoRef.set({ image: evt.target.result })
+                .then(() => Swal.fire('Sukses', 'Logo berhasil diubah untuk semua perangkat!', 'success'))
+                .catch(() => Swal.fire('Gagal', 'Terjadi gangguan koneksi database.', 'error'));
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function resetGlobalLogo() {
+            if(confirm('Apakah Anda yakin ingin mengembalikan logo ke versi bawaan sistem?')) {
+                logoRef.remove().then(() => Swal.fire('Sukses', 'Logo berhasil di-reset.', 'success'));
+            }
+        }
+
+        function uploadGlobalBG(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            Swal.fire({ title: 'Menyimpan Wallpaper...', text: 'Mengunggah ke server cloud...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                const sliderInput = document.querySelector('input[type="range"]');
+                const currentOpacity = sliderInput ? sliderInput.value : 70;
+                bgRef.set({ image: evt.target.result, opacity: parseInt(currentOpacity) })
+                .then(() => Swal.fire('Sukses', 'Wallpaper berhasil diubah secara global!', 'success'))
+                .catch(() => Swal.fire('Gagal', 'Gangguan koneksi database.', 'error'));
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function changeGlobalOpacity(val) {
+            document.getElementById('val-opacity').innerText = val + '%';
+            bgRef.update({ opacity: parseInt(val) });
+        }
+
+        function resetGlobalBG() {
+            if(confirm('Kembalikan latar belakang bawaan untuk SEMUA device panitia?')) {
+                bgRef.remove().then(() => location.reload());
+            }
+        }
+
+        function exportDataExcel() {
+            if(guests.length === 0) return Swal.fire('Kosong', 'Tidak ada data tamu di database.', 'warning');
+            Swal.fire({ title: 'Mempersiapkan Laporan', text: 'Mengekstrak data tamu...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+
+            setTimeout(() => {
+                const dataExport = guests.map((g, index) => ({
+                    'No': index + 1,
+                    'Nama Tamu': g.nama,
+                    'Kategori': g.kat,
+                    'Status VIP': g.vip,
+                    'Kehadiran': g.hadir ? 'HADIR' : 'BELUM DATANG',
+                    'Jumlah Pax': g.hadir ? (g.pax || 1) : '-',
+                    'Waktu Check-In': g.hadir ? g.waktu : '-',
+                    'Status Souvenir': g.souvenir ? g.souvenir : 'Belum Diklaim'
+                }));
+                const worksheet = XLSX.utils.json_to_sheet(dataExport);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan Kehadiran");
+                worksheet['!cols'] = [{wch:5}, {wch:30}, {wch:20}, {wch:12}, {wch:18}, {wch:12}, {wch:18}, {wch:30}];
+                
+                const dateStr = new Date().toLocaleDateString('id-ID').replace(/\//g, '-');
+                XLSX.writeFile(workbook, `Rekap_Tamu_NaylaRizal_${dateStr}.xlsx`);
+                Swal.close();
+            }, 800);
+        }
+
+        function importExcel(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            
+            reader.onload = (evt) => {
+                try {
+                    const data = evt.target.result;
+                    const workbook = XLSX.read(data, {type: 'binary'});
+                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const rows = XLSX.utils.sheet_to_json(sheet, {raw: false}); 
+                    
+                    if(rows.length === 0) return Swal.fire('Gagal', 'File kosong/format salah.', 'warning');
+
+                    let addedCount = 0; let updatedCount = 0;
+                    
+                    rows.forEach(row => {
+                        const normRow = {};
+                        for (let key in row) { if(row.hasOwnProperty(key)) normRow[key.toString().trim().toLowerCase()] = row[key]; }
+                        
+                        const namaTamu = (normRow['nama tamu'] || normRow['nama'] || '').toString().trim();
+                        const kategoriTamu = (normRow['kategori'] || 'Umum').toString().trim();
+                        const rawVip = (normRow['vip/tidak'] || normRow['vip'] || 'Tidak').toString().trim().toLowerCase();
+                        
+                        let vipStatus = 'Tidak';
+                        if(rawVip === 'ya' || rawVip === 'vip' || rawVip === 'true' || rawVip.includes('vip')) vipStatus = 'VIP';
+
+                        if(namaTamu !== '') {
+                            const existingGuest = guests.find(g => g.nama.toLowerCase() === namaTamu.toLowerCase());
+                            if (existingGuest) {
+                                firebase.database().ref("guests_list_wedding/" + existingGuest.fireKey).update({ kat: kategoriTamu, vip: vipStatus });
+                                updatedCount++;
+                            } else {
+                                db.push({
+                                    id: 'TK-' + Math.floor(100000 + Math.random() * 900000),
+                                    nama: namaTamu, kat: kategoriTamu, vip: vipStatus, hadir: false, waktu: null, foto: null, souvenir: null, pax: 0
+                                });
+                                addedCount++;
+                            }
+                        }
+                    });
+                    
+                    document.getElementById('fileExcel').value = '';
+                    Swal.fire('Import Berhasil', `Sinkronisasi Excel sukses.<br><br><b>${addedCount}</b> Tamu Baru.<br><b>${updatedCount}</b> Tamu Di-update.`, 'success');
+                } catch (error) {
+                    Swal.fire('Error', 'Masalah saat membaca Excel.', 'error');
+                }
+            };
+            reader.readAsBinaryString(file);
+        }
+
+        function renderQRTabList() {
+            const gr = document.getElementById('qr-download-grid'); 
+            const qInput = document.getElementById('cari-qr-tamu');
+            const val = qInput ? qInput.value.toLowerCase() : ''; 
+            gr.innerHTML = '';
+            
+            guests.filter(g => g.nama.toLowerCase().includes(val)).forEach(g => {
+                gr.innerHTML += `
+                    <div class="bg-white p-4 rounded-2xl border border-rose-gold/20 text-center shadow-sm flex flex-col justify-between items-center">
+                        <p class="font-bold text-xs text-maroon line-clamp-1">${g.nama}</p>
+                        <button onclick="downloadQRjpeg('${g.id}', '${g.nama}')" class="w-full bg-rose-gold text-white text-[10px] font-bold py-2 rounded-lg mt-2 hover:bg-maroon transition-all">DOWNLOAD QR</button>
+                    </div>`;
+            });
+        }
+
+        function downloadQRjpeg(id, nm) {
+            const c = document.getElementById('hidden-qr-engine'); c.innerHTML = '';
+            new QRCode(c, { text: id, width: 250, height: 250, colorDark : "#5D0E11", colorLight : "#ffffff" });
+            setTimeout(() => { 
+                const l = document.createElement('a'); 
+                l.download = `${nm}.jpeg`; 
+                l.href = c.querySelector('canvas').toDataURL('image/jpeg'); 
+                l.click(); 
+            }, 150);
+        }
+
+        function startScanner() {
+            if(window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
+                Swal.fire('Peringatan', 'Kamera butuh koneksi HTTPS.', 'warning');
+            }
+            stopScanner(); scanActive = true;
+            const video = document.getElementById('scanner-video');
+            const canvas = document.getElementById('scanner-canvas');
+            const ctx = canvas.getContext('2d');
+
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+            .catch(() => navigator.mediaDevices.getUserMedia({ video: true }))
+            .then(stream => {
+                scannerStream = stream; video.srcObject = stream; video.setAttribute("playsinline", true); video.play();
+                requestAnimationFrame(function tick() {
+                    if (!scanActive) return;
+                    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                        canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                        const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
+                        
+                        if (code) {
+                            const qrData = code.data.trim();
+                            const target = guests.find(x => x.id === qrData || x.nama.toLowerCase() === qrData.toLowerCase());
+                            if (target) {
+                                stopScanner();
+                                if (target.hadir) Swal.fire('Info', `${target.nama} sudah check-in.`, 'info');
+                                else prosesKehadiran(target);
+                                return;
+                            }
+                        }
+                    }
+                    requestAnimationFrame(tick);
+                });
+            }).catch((err) => Swal.fire('Ditolak', 'Akses kamera gagal.', 'warning'));
+        }
+
+        function stopScanner() {
+            scanActive = false;
+            if (scannerStream) { scannerStream.getTracks().forEach(t => t.stop()); scannerStream = null; }
+        }
+
+        function filterCari() {
+            const val = document.getElementById('cari-nama').value.toLowerCase();
+            const container = document.getElementById('hasil-cari');
+            container.innerHTML = '';
+            if(val.length < 2) return;
+
+            guests.filter(g => g.nama.toLowerCase().includes(val)).forEach(g => {
+                const badge = g.vip === 'VIP' ? 'VIP' : 'Regular';
+                const div = document.createElement('div');
+                div.className = "p-3 rounded-xl flex justify-between items-center bg-white border border-rose-gold/30 shadow-sm";
+                div.innerHTML = `
+                    <div><span class="font-bold text-xs text-maroon">${g.nama}</span><p class="text-[10px] opacity-60">${g.kat} - <b class="text-rose-gold">${badge}</b></p></div>
+                    ${g.hadir ? '<span class="text-xs text-green-600 font-bold">HADIR</span>' : `<button onclick="prosesKehadiranByKey('${g.fireKey}')" class="bg-maroon text-white text-[10px] px-3 py-1.5 rounded-lg font-bold">CHECK-IN</button>`}
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function prosesKehadiranByKey(k) { stopScanner(); const t = guests.find(g => g.fireKey === k); if(t) prosesKehadiran(t); }
+
+        function prosesKehadiran(guestObj) {
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+            .then(stream => {
+                webcamStream = stream; 
+                Swal.fire({
+                    title: 'Verifikasi Wajah Tamu',
+                    html: `
+                        <p class="text-sm mb-4">Posisikan wajah:<br><b class="text-maroon text-lg">${guestObj.nama}</b></p>
+                        <div class="w-full aspect-video bg-black rounded-xl overflow-hidden relative border-2 border-rose-gold shadow-inner mx-auto">
+                            <video id="swal-video" autoplay playsinline class="w-full h-full object-cover mirror-cam"></video>
+                        </div>
+                    `,
+                    confirmButtonText: '📸 AMBIL SNAPSHOT', cancelButtonText: 'BATAL', showCancelButton: true, confirmButtonColor: '#5D0E11', cancelButtonColor: '#B76E79', allowOutsideClick: false,
+                    didOpen: () => { document.getElementById('swal-video').srcObject = stream; }
+                }).then((res) => {
+                    if (res.isConfirmed) {
+                        const sVideo = document.getElementById('swal-video');
+                        const canvas = document.createElement('canvas');
+                        canvas.width = sVideo.videoWidth || 640; canvas.height = sVideo.videoHeight || 480;
+                        const ctx = canvas.getContext('2d'); ctx.translate(canvas.width, 0); ctx.scale(-1, 1);
+                        ctx.drawImage(sVideo, 0, 0, canvas.width, canvas.height);
+                        const pBase64 = canvas.toDataURL('image/jpeg');
+
+                        if(webcamStream) webcamStream.getTracks().forEach(t => t.stop());
+                        tanyakanPax(guestObj, pBase64);
+                    } else {
+                        if(webcamStream) webcamStream.getTracks().forEach(t => t.stop());
+                    }
+                    document.getElementById('cari-nama').value = ''; document.getElementById('hasil-cari').innerHTML = '';
+                });
+            })
+            .catch(() => {
+                Swal.fire({ title: 'Kamera Nonaktif', text: 'Lanjut tanpa foto?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Ya' }).then((res) => {
+                    if(res.isConfirmed) {
+                        tanyakanPax(guestObj, null);
+                    }
+                    document.getElementById('cari-nama').value = ''; document.getElementById('hasil-cari').innerHTML = '';
+                });
+            });
+        }
+
+        function tanyakanPax(guestObj, photoBase64) {
+            Swal.fire({
+                title: 'Berapa Pax yang Hadir?',
+                text: `Masukkan jumlah tamu yang datang menggunakan undangan ${guestObj.nama}`,
+                input: 'number',
+                inputValue: 1,
+                inputAttributes: { min: 1, step: 1 },
+                showCancelButton: false,
+                confirmButtonText: 'Simpan Kehadiran',
+                allowOutsideClick: false,
+                confirmButtonColor: '#5D0E11',
+            }).then((result) => {
+                const paxCount = parseInt(result.value) || 1;
+                const updateData = {
+                    hadir: true,
+                    waktu: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+                    pax: paxCount
+                };
+                if (photoBase64) updateData.foto = photoBase64;
+
+                firebase.database().ref("guests_list_wedding/" + guestObj.fireKey).update(updateData)
+                .then(() => {
+                    tampilSelamatDatang(guestObj);
+                });
+            });
+        }
+
+        // --- UPDATE SYSTEM TRANSMISI REAL-TIME KE LAYAR PROYETOR ---
+        function tampilSelamatDatang(guestObj) {
+            // MENGIRIM DATA KE DATABASE CLOUD AGAR 'display.html' IKUT BERUBAH SECARA OTOMATIS
+            monitorRef.set({
+                status: "menampilkan",
+                nama: guestObj.nama,
+                vip: guestObj.vip
+            });
+
+            const isVip = guestObj.vip === 'VIP';
+            const statusLabel = isVip ? 'Tamu VIP ⭐' : 'Tamu Regular';
+            const badgeColorClass = isVip ? 'bg-amber-100 text-amber-900 border-amber-400' : 'bg-slate-100 text-slate-700 border-slate-300';
+
+            Swal.fire({
+                title: '<span class="font-wedding text-5xl text-maroon block mb-2">Selamat Datang</span>',
+                html: `
+                    <div class="p-2 text-center">
+                        <p class="text-base font-semibold mb-3">Bapak/Ibu <span class="text-lg text-maroon font-bold block mt-1">${guestObj.nama}</span></p>
+                        <div class="inline-block px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider border ${badgeColorClass}">
+                            STATUS: ${statusLabel}
+                        </div>
+                        <p class="text-[10px] text-gray-500 mt-4 italic">(Nama tamu sudah dikirim ke Layar Utama Proyektor)</p>
+                    </div>
+                `,
+                icon: 'success',
+                timer: 3000,
+                timerProgressBar: true,
+                showConfirmButton: true,
+                confirmButtonText: 'Lanjutkan',
+                confirmButtonColor: '#5D0E11',
+                allowOutsideClick: false
+            }).then(() => {
+                tanyakanOpsiSouvenir(guestObj);
+            });
+        }
+
+        function tanyakanOpsiSouvenir(g) {
+            const isVip = g.vip === 'VIP';
+            Swal.fire({
+                title: 'Klaim Souvenir?',
+                html: `<div class="p-2 text-center"><p class="text-sm font-semibold mb-2">Tamu: <span class="text-maroon">${g.nama}</span></p><div class="inline-block px-3 py-1 rounded-full text-[11px] font-black uppercase mb-4 ${isVip ? 'bg-amber-100 text-amber-800 border-amber-400' : 'bg-slate-100 text-slate-700 border-slate-300'} border">STATUS: ${isVip ? 'VIP' : 'REGULAR'}</div><p class="text-xs">Souvenir mau diambil sekarang?</p></div>`,
+                icon: 'question', showCancelButton: true, confirmButtonText: 'Klaim Sekarang', cancelButtonText: 'Nanti Saja', confirmButtonColor: '#d97706', cancelButtonColor: '#64748b', allowOutsideClick: false
+            }).then((res) => {
+                if (res.isConfirmed) {
+                    firebase.database().ref("guests_list_wedding/" + g.fireKey).update({ souvenir: `Klaim Pada Pukul ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}` });
+                    Swal.fire('Berhasil', 'Kehadiran & souvenir tercatat.', 'success');
+                }
+            });
+        }
+
+        function filterCariSouvenir() {
+            const val = document.getElementById('cari-souvenir-nama').value.toLowerCase();
+            const container = document.getElementById('hasil-cari-souvenir');
+            container.innerHTML = '';
+            if(val.length < 2) return;
+
+            guests.filter(g => g.nama.toLowerCase().includes(val)).forEach(g => {
+                const b = g.vip === 'VIP' ? 'VIP' : 'Regular';
+                const div = document.createElement('div');
+                div.className = "p-3 rounded-xl flex justify-between items-center bg-white border border-rose-gold/30 shadow-sm";
+                div.innerHTML = `
+                    <div><span class="font-bold text-xs text-maroon">${g.nama}</span><p class="text-[10px] opacity-60">Status: <b>${b}</b></p></div>
+                    ${g.souvenir ? '<span class="text-xs text-amber-700 bg-amber-50 px-2 py-1 rounded font-bold border border-amber-200">DIKLAIM</span>' : `<button onclick="bukaPopupSouvenirByKey('${g.fireKey}')" class="bg-amber-600 text-white text-[10px] px-3 py-1.5 rounded-lg font-bold">CEK</button>`}
+                `;
+                container.appendChild(div);
+            });
+        }
+        function bukaPopupSouvenirByKey(k) { const t = guests.find(g => g.fireKey === k); if(t) bukaPopupSouvenir(t); }
+        function bukaPopupSouvenir(g) {
+            const isVip = g.vip === 'VIP';
+            Swal.fire({
+                title: 'Penyerahan Souvenir',
+                html: `<div class="p-2 text-center"><p class="text-sm font-semibold mb-1">${g.nama}</p><div class="inline-block px-4 py-1 rounded-full text-xs font-black uppercase border ${isVip ? 'bg-amber-100 text-amber-800 border-amber-400' : 'bg-slate-100 text-slate-700 border-slate-300'}">${isVip ? 'VIP' : 'Regular'}</div></div>`,
+                showCancelButton: true, confirmButtonText: 'Klaim Souvenir', confirmButtonColor: '#d97706'
+            }).then((res) => {
+                if (res.isConfirmed) {
+                    firebase.database().ref("guests_list_wedding/" + g.fireKey).update({ souvenir: `Klaim Pada Pukul ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}` });
+                    Swal.fire('Sukses', 'Souvenir tercatat.', 'success'); document.getElementById('cari-souvenir-nama').value=''; document.getElementById('hasil-cari-souvenir').innerHTML='';
+                }
+            });
+        }
+
+        function updateSouvenirTable() {
+            const tb = document.getElementById('tabel-souvenir'); tb.innerHTML = '';
+            let totalClaimed = 0;
+            guests.filter(g => g.souvenir).forEach(g => {
+                totalClaimed++;
+                tb.innerHTML += `<tr class="hover:bg-white/40"><td class="py-3 px-4 font-semibold">${g.nama}</td><td class="py-3 px-4 text-xs"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${g.vip === 'VIP' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-600'}">${g.vip === 'VIP' ? 'VIP' : 'Regular'}</span></td><td class="py-3 px-4"><span class="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-md">🎁 ${g.souvenir}</span></td></tr>`;
+            });
+            const statSouvenir = document.getElementById('stat-souvenir');
+            if (statSouvenir) statSouvenir.innerText = totalClaimed;
+        }
+
+        function updateUI() {
+            const tb = document.getElementById('tabel-tamu'); tb.innerHTML = ''; 
+            let th = 0; 
+            let totalPax = 0;
+            const q = (document.getElementById('cari-daftar-tamu') ? document.getElementById('cari-daftar-tamu').value.toLowerCase().trim() : '');
+
+            guests.forEach(g => {
+                if(g.hadir) {
+                    th++;
+                    totalPax += parseInt(g.pax) || 1; 
+                }
+                
+                if (q === "" || g.nama.toLowerCase().includes(q) || g.kat.toLowerCase().includes(q)) {
+                    let p = g.foto ? `<img src="${g.foto}" onclick="openFotoModal('${g.foto}')" class="w-8 h-8 rounded-full object-cover border-2 border-emerald-500 mx-auto cursor-pointer shadow-sm hover:scale-105 transition-all">` : `<div class="w-8 h-8 rounded-full bg-slate-100 border flex items-center justify-center text-[10px] text-slate-400 mx-auto italic">Belum</div>`;
+                    let b = g.vip === 'VIP' ? `<span class="bg-amber-100 text-amber-800 border border-amber-300 font-bold text-[10px] px-2.5 py-0.5 rounded-full">VIP</span>` : `<span class="bg-slate-100 text-slate-500 text-[10px] px-2.5 py-0.5 rounded-full">Reg</span>`;
+                    
+                    let statusKehadiran = g.hadir ? `Hadir (${g.waktu}) - <b>${g.pax || 1} Pax</b>` : 'Belum Datang';
+                    let statusClass = g.hadir ? 'bg-green-100 text-green-800' : 'bg-rose-50 text-rose-700';
+
+                    tb.innerHTML += `<tr class="hover:bg-white/40"><td class="py-3 px-4 font-semibold text-slate-900">${g.nama}</td><td class="py-3 px-4 text-xs">${g.kat}</td><td class="py-3 px-4"><span class="text-xs px-2 py-0.5 rounded ${statusClass}">${statusKehadiran}</span></td><td class="py-3 px-4">${p}</td><td class="py-3 px-4 text-center">${b}</td><td class="py-3 px-4 text-center"><button onclick="hapusTamu('${g.fireKey}')" class="text-xs text-rose-400 hover:text-maroon font-bold">Hapus</button></td></tr>`;
+                }
+            });
+            document.getElementById('stat-hadir').innerText = th; 
+            document.getElementById('stat-pax').innerText = totalPax; 
+            document.getElementById('stat-total').innerText = guests.length; 
+            renderChart(th, guests.length);
+        }
+
+        function renderChart(h, t) {
+            const ctx = document.getElementById('chartKehadiran').getContext('2d');
+            if(chartInstance) chartInstance.destroy();
+            chartInstance = new Chart(ctx, { type: 'doughnut', data: { labels: ['Hadir', 'Belum'], datasets: [{ data: [h, (t-h <= 0 && h===0)?1:t-h], backgroundColor: ['#5D0E11', '#B76E79'] }] }, options: { plugins: { legend: { display: false } }, cutout: '72%', responsive: true, maintainAspectRatio: false }});
+        }
+
+        function tambahTamu() {
+            const nama = document.getElementById('in-nama').value.trim();
+            const kat = document.getElementById('in-kat').value.trim() || 'Umum';
+            const vip = document.getElementById('in-vip').value;
+            if(!nama) return Swal.fire('Peringatan', 'Nama tamu wajib diisi.', 'warning');
+
+            const idUnik = 'TK-' + Math.floor(100000 + Math.random() * 900000);
+            db.push({ id: idUnik, nama, kat, vip, hadir: false, waktu: null, foto: null, souvenir: null, pax: 0 });
+            
+            document.getElementById('in-nama').value = '';
+            document.getElementById('in-kat').value = '';
+            Swal.fire('Sukses', 'Data terunggah ke database pusat.', 'success');
+        }
+
+        function openFotoModal(src) { document.getElementById('img-modal-target').src = src; document.getElementById('modal-foto').classList.remove('hidden'); }
+        function closeFotoModal() { document.getElementById('modal-foto').classList.add('hidden'); }
+        function hapusTamu(k) { if(confirm('Hapus permanen data tamu?')) firebase.database().ref("guests_list_wedding/" + k).remove(); }
+    </script>
+</body>
+</html>
